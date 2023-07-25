@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
                             "ProductID: " + usbDevice1.getProductId() + "\n";
 
                     int interfaceCount = usbDevice1.getInterfaceCount();
-                    Toast.makeText(this, "INTERFACE COUNT: " + String.valueOf(interfaceCount), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "All USB Connect INTERFACE COUNT: " + String.valueOf(interfaceCount), Toast.LENGTH_SHORT).show();
 
                     mDevice = usbDevice1;
 
