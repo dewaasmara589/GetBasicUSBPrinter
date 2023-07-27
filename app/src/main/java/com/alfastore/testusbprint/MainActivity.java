@@ -15,11 +15,20 @@ import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.dantsu.escposprinter.EscPosPrinter;
+import com.dantsu.escposprinter.connection.usb.UsbConnection;
+import com.dantsu.escposprinter.exceptions.EscPosBarcodeException;
+import com.dantsu.escposprinter.exceptions.EscPosConnectionException;
+import com.dantsu.escposprinter.exceptions.EscPosEncodingException;
+import com.dantsu.escposprinter.exceptions.EscPosParserException;
+import com.dantsu.escposprinter.textparser.PrinterTextParserImg;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private UsbEndpoint mEndPoint;
     private PendingIntent mPermissionIntent;
     EditText ed_txt;
+    Button print, printQRCode, printGambar;
     private static final String ACTION_USB_PERMISSION = "com.alfastore.testusbprint.USB_PERMISSION";
     private static Boolean forceCLaim = true;
 
@@ -47,15 +57,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         ed_txt = (EditText) findViewById(R.id.ed_txt);
-        Button print = (Button) findViewById(R.id.print);
+        print = (Button) findViewById(R.id.print);
+        printQRCode = (Button) findViewById(R.id.printQRCode);
+        printGambar = (Button) findViewById(R.id.printGambar);
 
         mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         mDeviceList = mUsbManager.getDeviceList();
 
         if (mDeviceList.size() > 0) {
             mDeviceIterator = mDeviceList.values().iterator();
-
-            Toast.makeText(this, "Device List Size: " + String.valueOf(mDeviceList.size()), Toast.LENGTH_SHORT).show();
 
             TextView textView = (TextView) findViewById(R.id.usbDevice);
             textView.setMovementMethod(new ScrollingMovementMethod());
@@ -74,8 +84,7 @@ public class MainActivity extends AppCompatActivity {
                             "VendorID: " + usbDevice1.getVendorId() + "\n" +
                             "ProductID: " + usbDevice1.getProductId() + "\n";
 
-                    int interfaceCount = usbDevice1.getInterfaceCount();
-                    Toast.makeText(this, "All USB Connect INTERFACE COUNT: " + String.valueOf(interfaceCount), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "USB Printer FUJITSU Connected", Toast.LENGTH_SHORT).show();
 
                     mDevice = usbDevice1;
 
@@ -101,6 +110,20 @@ public class MainActivity extends AppCompatActivity {
                 print(mConnection, mInterface);
             }
         });
+
+        printQRCode.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                printQRCode(mConnection, mInterface);
+            }
+        });
+
+        printGambar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                printGambar(mConnection, mInterface);
+            }
+        });
     }
 
     private void print(final UsbDeviceConnection connection, final UsbInterface usbInterface) {
@@ -120,9 +143,104 @@ public class MainActivity extends AppCompatActivity {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-
-                    byte[] cut_paper = {0x1D, 0x56, 0x41, 0x10};
                     connection.bulkTransfer(mEndPoint, testBytes, testBytes.length, 0);
+                }
+            });
+            thread.run();
+
+            cutPaper(connection, usbInterface);
+        }
+    }
+
+    private void printQRCode(final UsbDeviceConnection connection, final UsbInterface usbInterface) {
+//        final String test = ed_txt.getText().toString() + "\n";
+
+        if (usbInterface == null) {
+            Toast.makeText(this, "INTERFACE IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (connection == null) {
+            Toast.makeText(this, "CONNECTION IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (forceCLaim == null) {
+            Toast.makeText(this, "FORCE CLAIM IS NULL", Toast.LENGTH_SHORT).show();
+        } else {
+
+            connection.claimInterface(usbInterface, forceCLaim);
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        EscPosPrinter printer = new EscPosPrinter(new UsbConnection(mUsbManager, mDevice), 203, 46f, 40);
+                        printer.printFormattedText(
+                                "[C]<qrcode size='25'>tes</qrcode>\n"
+                        );
+                    } catch (EscPosConnectionException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosParserException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosEncodingException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosBarcodeException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            thread.run();
+
+            cutPaper(connection, usbInterface);
+        }
+    }
+
+    private void printGambar(final UsbDeviceConnection connection, final UsbInterface usbInterface) {
+        if (usbInterface == null) {
+            Toast.makeText(this, "INTERFACE IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (connection == null) {
+            Toast.makeText(this, "CONNECTION IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (forceCLaim == null) {
+            Toast.makeText(this, "FORCE CLAIM IS NULL", Toast.LENGTH_SHORT).show();
+        } else {
+
+            connection.claimInterface(usbInterface, forceCLaim);
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        EscPosPrinter printer = new EscPosPrinter(new UsbConnection(mUsbManager, mDevice), 203, 46f, 40);
+                        printer.printFormattedText(
+                                "[C]<img>" + PrinterTextParserImg.bitmapToHexadecimalString(printer, getApplicationContext().getResources().getDrawableForDensity(R.drawable.ic_report, DisplayMetrics.DENSITY_MEDIUM)) + "</img>\n"
+                        );
+                    } catch (EscPosConnectionException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosParserException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosEncodingException e) {
+                        throw new RuntimeException(e);
+                    } catch (EscPosBarcodeException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            thread.run();
+
+            cutPaper(connection, usbInterface);
+        }
+    }
+
+    private void cutPaper(final UsbDeviceConnection connection, final UsbInterface usbInterface) {
+        if (usbInterface == null) {
+            Toast.makeText(this, "INTERFACE IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (connection == null) {
+            Toast.makeText(this, "CONNECTION IS NULL", Toast.LENGTH_SHORT).show();
+        } else if (forceCLaim == null) {
+            Toast.makeText(this, "FORCE CLAIM IS NULL", Toast.LENGTH_SHORT).show();
+        } else {
+
+            connection.claimInterface(usbInterface, forceCLaim);
+
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    byte[] cut_paper = {0x1D, 0x56, 0x41, 0x10};
                     connection.bulkTransfer(mEndPoint, cut_paper, cut_paper.length, 0);
                 }
             });

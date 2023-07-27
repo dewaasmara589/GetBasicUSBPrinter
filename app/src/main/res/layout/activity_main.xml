@@ -22,12 +22,36 @@
         android:textSize="25dp"
         android:hint="Enter text to print" />
 
-    <Button
-        android:id="@+id/print"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
-        android:text="print" />
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="10dp">
+
+        <Button
+            android:id="@+id/print"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="print"
+            android:layout_marginEnd="20dp"/>
+
+        <Button
+            android:id="@+id/printGambar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Gambar"
+            android:layout_marginEnd="20dp"/>
+
+        <Button
+            android:id="@+id/printQRCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="QR Code" />
+
+    </LinearLayout>
 
 </LinearLayout>
